@@ -57,24 +57,59 @@
     <Compile Include="GUI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <None Include="PluginData\PlanetFactory\Exhaust.bin" />
-    <None Include="PluginData\PlanetFactory\Grayskull.bin" />
-    <None Include="PluginData\PlanetFactory\Joker.bin" />
-    <None Include="PluginData\PlanetFactory\Skelton.bin" />
+    <None Include="PluginData\PlanetFactory\Ablate.bin" />
+    <None Include="PluginData\PlanetFactory\Ablate.cfg" />
+    <None Include="PluginData\PlanetFactory\Ascension.bin" />
+    <None Include="PluginData\PlanetFactory\Ascension.cfg" />
+    <None Include="PluginData\PlanetFactory\Erin.bin" />
+    <None Include="PluginData\PlanetFactory\Erin.cfg" />
+    <None Include="PluginData\PlanetFactory\Inaccessable.bin" />
+    <None Include="PluginData\PlanetFactory\Inaccessable.cfg" />
+    <None Include="PluginData\PlanetFactory\PlanetFactory.cfg" />
+    <None Include="PluginData\PlanetFactory\Pock.bin" />
+    <None Include="PluginData\PlanetFactory\Pock.cfg" />
+    <None Include="PluginData\PlanetFactory\Ringle.bin" />
+    <None Include="PluginData\PlanetFactory\Ringle.cfg" />
+    <None Include="PluginData\PlanetFactory\Sentar.cfg" />
+    <None Include="PluginData\PlanetFactory\Skelton.cfg" />
+    <None Include="PluginData\PlanetFactory\Thud.bin" />
+    <None Include="PluginData\PlanetFactory\Thud.cfg" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Default.png" />
-    <Content Include="PluginData\PlanetFactory\Exhaust.png" />
-    <Content Include="PluginData\PlanetFactory\Exhaust_diff.png" />
-    <Content Include="PluginData\PlanetFactory\Exhaust_height.png" />
-    <Content Include="PluginData\PlanetFactory\Grayskull.png" />
-    <Content Include="PluginData\PlanetFactory\Grayskull_height.png" />
-    <Content Include="PluginData\PlanetFactory\Joker.png" />
-    <Content Include="PluginData\PlanetFactory\Skelton.png" />
-    <Content Include="PluginData\PlanetFactory\Skelton_height.png" />
     <EmbeddedResource Include="Shifty.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="PluginData\PlanetFactory\Ablate_map.png" />
+    <Content Include="PluginData\PlanetFactory\Ablate_normal.png" />
+    <Content Include="PluginData\PlanetFactory\Ascension_map.png" />
+    <Content Include="PluginData\PlanetFactory\Ascension_normal.png" />
+    <Content Include="PluginData\PlanetFactory\Erin_height.png" />
+    <Content Include="PluginData\PlanetFactory\Erin_map.png" />
+    <Content Include="PluginData\PlanetFactory\Erin_normal.png" />
+    <Content Include="PluginData\PlanetFactory\Inaccessable_map.png" />
+    <Content Include="PluginData\PlanetFactory\Inaccessable_normal.png" />
+    <Content Include="PluginData\PlanetFactory\Logo_small.png" />
+    <Content Include="PluginData\PlanetFactory\Olympus2.png" />
+    <Content Include="PluginData\PlanetFactory\Olympus2_color.png" />
+    <Content Include="PluginData\PlanetFactory\Pock_map.png" />
+    <Content Include="PluginData\PlanetFactory\Pock_normal.png" />
+    <Content Include="PluginData\PlanetFactory\Ringle_color.png" />
+    <Content Include="PluginData\PlanetFactory\Ringle_height.png" />
+    <Content Include="PluginData\PlanetFactory\Ringle_map.png" />
+    <Content Include="PluginData\PlanetFactory\Ringle_normal.png" />
+    <Content Include="PluginData\PlanetFactory\Ringle_ring.png" />
+    <Content Include="PluginData\PlanetFactory\Sentar_map.png" />
+    <Content Include="PluginData\PlanetFactory\Sentar_rim.png" />
+    <Content Include="PluginData\PlanetFactory\Sentar_ring.png" />
+    <Content Include="PluginData\PlanetFactory\Skelton_color.png" />
+    <Content Include="PluginData\PlanetFactory\Skelton_map.png" />
+    <Content Include="PluginData\PlanetFactory\Skelton_normal.png" />
+    <Content Include="PluginData\PlanetFactory\Thud_color.png" />
+    <Content Include="PluginData\PlanetFactory\Thud_height.png" />
+    <Content Include="PluginData\PlanetFactory\Thud_map.png" />
+    <Content Include="PluginData\PlanetFactory\Thud_normal.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
