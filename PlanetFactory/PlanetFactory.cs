@@ -548,6 +548,7 @@ namespace PlanetFactory
         }
 
 
+            //TODO:Remove this funtion. Easier to deal with the config nodes directly.
         public static Dictionary<string,string> ConfigToDict(ConfigNode node)
         {
             var dict=new Dictionary<string,string> ();
@@ -604,6 +605,7 @@ namespace PlanetFactory
 
             var pqs = localGameObject.GetComponentInChildren<PQS>();
 
+            //Remove PQS cities. TODO:Refactor.
             var mods = localGameObject.GetComponentsInChildren<PQSMod>(true);
             foreach (var mod in mods)
             {
@@ -960,9 +962,9 @@ namespace PlanetFactory
                     print("Updating Local " + body.name);
                     LoadPQS(body.name);
                 }),
-#if false
+#if true
 
-            new PFBody("Serious", "Sun", nextFlightGlobalsIndex++,
+            new PFBody("Serious", "Sun", 200,
                 new PFOrbit
                 {
                     inclination = 30.0f,
@@ -984,7 +986,7 @@ namespace PlanetFactory
                     //cb.CBUpdate();
                 }),
 
-            new PFBody("Joker", "Minmus", nextFlightGlobalsIndex++,
+            new PFBody("Joker", "Minmus", 210,
                 new PFOrbit
                 {
                     inclination = 30.0f,
