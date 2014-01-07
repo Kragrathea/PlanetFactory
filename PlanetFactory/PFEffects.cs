@@ -104,7 +104,7 @@ namespace PlanetFactory
 
         public static GameObject AddEffect(GameObject smallPlanet, string effectName, Vector3 position, Quaternion rotation, Vector3 scale)
         {
-            MonoBehaviour.print(String.Format("Adding effect {0} to {1}", effectName, smallPlanet.name));
+            PFUtil.Log(String.Format("Adding effect {0} to {1}", effectName, smallPlanet.name));
             var effect = (GameObject)Object.Instantiate(Resources.Load("Effects/" + effectName));
 
             effect.transform.parent = smallPlanet.transform;
@@ -113,7 +113,7 @@ namespace PlanetFactory
             effect.layer = smallPlanet.layer;
 
             effect.transform.localScale = scale;
-            MonoBehaviour.print("Finished effect");
+
             return (effect);
         }
 

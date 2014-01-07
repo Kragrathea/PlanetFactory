@@ -19,10 +19,10 @@ namespace PlanetFactory
             var exportBin = true;
             var removeAlpha = true;
 
-            var configRoot = ConfigNode.Load(PlanetFactory.DataPath+name+".cfg");
+            var configRoot = ConfigNode.Load(PlanetFactory.CurrentPath + name + ".cfg");
             if (configRoot != null && configRoot.HasNode("ScaledExport"))
             {
-                PlanetFactory.print("Loading ScaledExport");
+                PFUtil.Log("Loading ScaledExport");
                 var node=configRoot.GetNode("ScaledExport");
                 if(node.HasValue("templateName"))
                     templateName = node.GetValue("templateName");
@@ -42,11 +42,11 @@ namespace PlanetFactory
                 if (node.HasValue("removeAlpha"))
                     removeAlpha = bool.Parse(node.GetValue("removeAlpha"));
 
-                PlanetFactory.print("Loaded ScaledExport");
+                PFUtil.Log("Loaded ScaledExport");
 
             }
 
-
+            //print("templateName:" + templateName);
 
             var template = GameObject.Find(templateName);
 
@@ -82,8 +82,11 @@ namespace PlanetFactory
                 }
                 bodyPQS.isBuildingMaps = false;
 
+                var binFileName = PlanetFactory.CurrentPath + name + "_.bin";
                 //print("Writing scaledPlanet");
-                var writer = KSP.IO.BinaryWriter.CreateForType<PlanetFactory>(name + "_.bin");
+                var stream = File.Open(binFileName,FileMode.Create);
+                var writer = new BinaryWriter(stream);
+                //var writer = KSP.IO.BinaryWriter.CreateForType<PlanetFactory>(PlanetFactory.CurrentPath+ name + "_.bin");
                 foreach (var v in newVerts)
                 {
                     writer.Write(v.x);
@@ -106,14 +109,14 @@ namespace PlanetFactory
                 }
             }
             var mapBytes = textures[0].EncodeToPNG();
-            File.WriteAllBytes(PlanetFactory.DataPath+ name + "_map_.png",  mapBytes);
+            File.WriteAllBytes(PlanetFactory.CurrentPath + name + "_map_.png", mapBytes);
 
-            mapBytes = textures[1].EncodeToPNG();
-            File.WriteAllBytes(PlanetFactory.DataPath + name + "_bump_.png", mapBytes);
+            //mapBytes = textures[1].EncodeToPNG();
+            //File.WriteAllBytes(PlanetFactory.CurrentPath + name + "_bump_.png", mapBytes);
 
             var normalMap = PFUtil.BumpToNormalMap(textures[1], 9);
             mapBytes = normalMap.EncodeToPNG();
-            File.WriteAllBytes(PlanetFactory.DataPath + name + "_normal_.png", mapBytes);
+            File.WriteAllBytes(PlanetFactory.CurrentPath + name + "_normal_.png", mapBytes);
 
         }
 #endif

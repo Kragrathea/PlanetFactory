@@ -13,52 +13,111 @@ namespace PlanetFactory
         private static int nextFlightGlobalsIndex = 16;
         private bool guiHidden = true;
         public static string DataPath = "GameData/PlanetFactory/PluginData/PlanetFactory/";
+        public static string OverridePath = string.Empty;
+        private static PlanetFactory _instance=null;
+        public static PlanetFactory Instance{  
+            get{
+                return _instance;
+            }
+            private set{
+                _instance=value;
+            }
+        }
+
         public string ConfigFilename = DataPath + "PlanetFactory.cfg";
 
-        private ConfigNode configRoot;
+        public static void SetPathFor(PFBody body)
+        {
+            if (body != null && body.parentSystem != null)
+            {
+                //PFUtil.Log("set OverridePath:" + body.parentSystem.path);
+                PlanetFactory.OverridePath = body.parentSystem.path;
+                //print("currentPath:" + CurrentPath);
+            }
+            else
+            {
+                //PFUtil.Log("clear OverridePath");
+                PlanetFactory.OverridePath = string.Empty;
+            }
+        }
+        public static string CurrentPath{
+            get
+            {
+                if (OverridePath != string.Empty)
+                    return OverridePath;
+                return DataPath;
+            }
+        }
+        public PlanetFactory()
+        {
+            _instance = this;
+        }
+        private ConfigNode PFConfigRoot;
         public bool autoLoad = true;
         public bool isFactoryEnabled = true;
+        //public bool isSystemEnabled = true;
+      
         public bool autoLoadSave = true;
         public string autoLoadSaveName = "default";
         public double ultraWarpAlt = 20000000000.0;
         public bool ultraWarpEnabled = true;
         public static bool shiftyMode = false;
+        public string disabledSystems = "";
                                      
         private void LoadConfig()
         {
-            print("LoadConfig:" + ConfigFilename);
-            configRoot = ConfigNode.Load(ConfigFilename);
-            if (configRoot == null)
+            PFUtil.Log("LoadConfig:" + ConfigFilename);
+            PFConfigRoot = ConfigNode.Load(ConfigFilename);
+            if (PFConfigRoot == null)
             {
-                configRoot = new ConfigNode();
+                PFConfigRoot = new ConfigNode();
             }
-            var pfConfig = configRoot.nodes.GetNode("PlanetFactory");
+            var pfConfig = PFConfigRoot.nodes.GetNode("PlanetFactory");
             if (pfConfig == null)
             {
-                configRoot.AddNode("PlanetFactory");
+                PFConfigRoot.AddNode("PlanetFactory");
                 SaveConfig();
             }
             else
             {
-                print("loading PlanetFactory config:");
+                PFUtil.Log("loading PlanetFactory config:");
                 LoadConfiguration(this, pfConfig);
             }
         }
         private void SaveConfig()
         {
-            print("SaveConfig");
-            var pfConfig = configRoot.nodes.GetNode("PlanetFactory");
+            PFUtil.Log("SaveConfig");
+            var pfConfig = PFConfigRoot.nodes.GetNode("PlanetFactory");
+
             pfConfig.SetValue("autoLoad", autoLoad.ToString());
             pfConfig.SetValue("isFactoryEnabled", isFactoryEnabled.ToString());
+            //pfConfig.SetValue("isSystemEnabled", isSystemEnabled.ToString());
+          
             pfConfig.SetValue("autoLoadSave", autoLoadSave.ToString());
             pfConfig.SetValue("autoLoadSaveName", autoLoadSaveName);
-            configRoot.Save(ConfigFilename);
+
+            //var sNode=new ConfigNode("Systems");
+
+            var disabledSys = new List<string>();
+            foreach (var s in Systems)
+            {
+                if (!s.enabled)
+                    disabledSys.Add(s.name);
+            }
+//            print(string.Join(",", disabledSys.ToArray()));
+            if (!pfConfig.values.Contains("disabledSystems"))
+                pfConfig.AddValue("disabledSystems", string.Join(",", disabledSys.ToArray()));
+            else
+                pfConfig.SetValue("disabledSystems", string.Join(",", disabledSys.ToArray()));
+            //PFConfigRoot.AddNode(sNode);
+
+            PFConfigRoot.Save(ConfigFilename);
         }
 
         private List<string> saveNames;
         private void FindSaves()
         {
-            print("FindSaves");
+            PFUtil.Log("FindSaves");
             var dirs=Directory.GetDirectories("saves\\");
             saveNames = dirs.Where(x => File.Exists(x + "\\persistent.sfs")).Select(x => x.Split(new[] { '\\' })[1]).ToList();
         }
@@ -74,17 +133,25 @@ namespace PlanetFactory
             print("PlanetFactory Starting");
 
             string sFilePath = KSP.IO.IOUtils.GetFilePathFor(this.GetType(), "");
-            Debug.Log("PFDataPath: " + sFilePath);
-
 
             sFilePath = sFilePath.Replace("\\", "/");
             DataPath = sFilePath+"/";
-            print("Setting PlanetFactory Data Path to:" + DataPath);
+            print("Setting datapath:" + DataPath);
+
+            File.Delete(PlanetFactory.DataPath + "Log.txt");
+
+            PFUtil.Log("//////////////////////////////////////////////////////////////////////////////////////////");
+            PFUtil.Log("PlanetFactory Starting at"+DateTime.Now);
+            PFUtil.Log("//////////////////////////////////////////////////////////////////////////////////////////");
+            PFUtil.Log("PlanetFactory Data Path:" + DataPath);
+
             ConfigFilename = DataPath + "PlanetFactory.cfg";
 
             LoadConfig();
 
-            FindSaves();
+            FindSystems();
+
+            //FindSaves();
 
             InitComboBox();
         }
@@ -104,30 +171,30 @@ namespace PlanetFactory
             if (!autoLoad)
                 return;
 
-            var menu = GameObject.Find("MainMenu");
-            if (menu != null && bDoOnce)
-            {
-                bDoOnce = false;
+            //var menu = GameObject.Find("MainMenu");
+            //if (menu != null && bDoOnce)
+            //{
+            //    bDoOnce = false;
 
-                if (autoLoadSave)
-                {
-                    HighLogic.CurrentGame = GamePersistence.LoadGame("persistent", autoLoadSaveName, true, false);
-                    if (HighLogic.CurrentGame != null)
-                    {
-                        HighLogic.SaveFolder = autoLoadSaveName;
-                        //load to SpaceCenter
-                        HighLogic.CurrentGame.Start();
-                        //Go to flight
-                        //FlightDriver.StartAndFocusVessel("persistent", 0);// FlightGlobals.Vessels.Count()-1);
-                    }
-                }
-                else
-                {
-                    //pop up load game dialog.
-                    var mc = menu.GetComponent<MainMenu>();
-                    mc.continueBtn.onPressed.Invoke();
-                }
-            }
+            //    if (autoLoadSave)
+            //    {
+            //        HighLogic.CurrentGame = GamePersistence.LoadGame("persistent", autoLoadSaveName, true, false);
+            //        if (HighLogic.CurrentGame != null)
+            //        {
+            //            HighLogic.SaveFolder = autoLoadSaveName;
+            //            //load to SpaceCenter
+            //            HighLogic.CurrentGame.Start();
+            //            //Go to flight
+            //            //FlightDriver.StartAndFocusVessel("persistent", 0);// FlightGlobals.Vessels.Count()-1);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        //pop up load game dialog.
+            //        var mc = menu.GetComponent<MainMenu>();
+            //        mc.continueBtn.onPressed.Invoke();
+            //    }
+            //}
         }
 
         private bool isFactoryLoaded = false;
@@ -143,7 +210,7 @@ namespace PlanetFactory
             {
                 if (c.enabled!=enabled)
                 {
-                    print("Updating collision " + c.gameObject.name +"="+enabled );
+                    //PFUtil.Log("Updating collision " + c.gameObject.name + "=" + enabled);
                     c.enabled = enabled;
                 }
             }
@@ -155,7 +222,7 @@ namespace PlanetFactory
         {
             if (FlightGlobals.currentMainBody!=null && FlightGlobals.currentMainBody.bodyName != currentBodyName)
             {
-                print("Body change "+currentBodyName +" to " + FlightGlobals.currentMainBody.bodyName);
+                PFUtil.Log("Body change " + currentBodyName + " to " + FlightGlobals.currentMainBody.bodyName);
 
                 if (currentBodyName != null)
                     SetLocalCollision(currentBodyName, false);
@@ -178,14 +245,14 @@ namespace PlanetFactory
             {
                 if (TimeWarp.fetch.warpRates.Length < ultraWarpRates.Length)
                 {
-                    print("UltraWarp on " + FlightGlobals.ship_altitude);
+                    PFUtil.Log("UltraWarp on " + FlightGlobals.ship_altitude);
                     TimeWarp.fetch.warpRates = ultraWarpRates;
                 }
             }else
             {
                 if (TimeWarp.fetch.warpRates.Length != stockWarpRates.Length)
                 {
-                    print("UltraWarp off " + FlightGlobals.ship_altitude);
+                    PFUtil.Log("UltraWarp off " + FlightGlobals.ship_altitude);
                     if(TimeWarp.CurrentRateIndex>stockWarpRates.Length-1)
                         TimeWarp.SetRate(stockWarpRates.Length-1, true);
                     TimeWarp.fetch.warpRates = stockWarpRates;
@@ -196,21 +263,35 @@ namespace PlanetFactory
 
         public void OnLevelWasLoaded(int level)
         {
-            print("OnLevelWasLoaded:" + level);
+            //PFUtil.Log("OnLevelWasLoaded:" + level);
 
             if (PSystemManager.Instance != null && ScaledSpace.Instance == null)
             {
                 isTooLateToLoad = true;
             }
 
-            if (!isFactoryEnabled)
-                return;
+//            if (!isFactoryEnabled)// && !isSystemEnabled)
+//                return;
+
 
             PlanetariumCamera.fetch.maxDistance = 5000000000000;
 
             if (PSystemManager.Instance != null && ScaledSpace.Instance == null)
             {
                 isFactoryLoaded = true;
+                if (!isFactoryEnabled)
+                {
+                    newBodies = new List<PFBody>();
+                }
+
+                LoadSystems();
+
+                //PFUtil.Log("Body indexes");
+                //foreach (var body in newBodies)
+                //{
+                //    PFUtil.Log(body.name + ":" + body.flightGlobalsIndex);
+                //}
+
                 findPrefabBodies(PSystemManager.Instance.systemPrefab.rootBody);
                 
                 foreach (var b in newBodies)
@@ -221,9 +302,10 @@ namespace PlanetFactory
                     }
                     catch (Exception e)
                     {
-                        print("Error creating planet "+b.name);
-                        print(e.Message);
-                        print(e.InnerException.Message);
+                        PFUtil.Log("Error creating planet " + b.name,LogType.Error);
+                        PFUtil.Log("Exception:" + e.Message, LogType.Error);
+                        PFUtil.Log("InnerException:" + e.InnerException.Message, LogType.Error);
+                        PFUtil.Log("Stack:", LogType.Error);
                     }
                 }
                 PSystemManager.Instance.OnPSystemReady.Add(OnPSystemReady);
@@ -233,8 +315,8 @@ namespace PlanetFactory
         public void OnPSystemReady()
         {
             //print("OnPSystemReady");
-            if (!isFactoryEnabled)
-                return;
+//            if (!isFactoryEnabled)// && !isSystemEnabled)
+//                return;
             foreach (var b in newBodies)
             {
                 try
@@ -243,13 +325,141 @@ namespace PlanetFactory
                 }
                 catch (Exception e)
                 {
-                    print("Error updating planet " + b.name);
-                    print(e.Message);
-                    print(e.InnerException.Message);
+                    PFUtil.Log("Error updating planet " + b.name, LogType.Error);
+                    PFUtil.Log("Exception:" + e.Message, LogType.Error);
+                    if(e.InnerException!=null)
+                        PFUtil.Log("InnerException:" + e.InnerException.Message, LogType.Error);
+                    PFUtil.Log("Stack:"+e.StackTrace, LogType.Error);
                 }
+            }
+            //PFUtil.Log(Dump.DumpMods());
+        }
+
+        public class PFSystem
+        {
+            public string name;
+            public List<string> planetNames = new List<string>();
+            public bool enabled = true;
+            public string path = "";
+
+            public List<PFBody> LoadPlanets()
+            {
+                var bodies = new List<PFBody>();
+
+                if (!enabled)
+                    return bodies;
+
+                PFUtil.Log("Loading System:" + name);
+                foreach (var planetName in planetNames)
+                {
+                    var bodyConfigFilename = path + planetName + ".cfg";
+                    PFUtil.Log("Loading Body:" + planetName);
+                    var configRoot = ConfigNode.Load(bodyConfigFilename);
+                    if (configRoot.nodes.Contains("PFBody"))
+                    {
+                            var n = configRoot.GetNode("PFBody");
+                            var body = new PFBody()
+                            {
+                                parentSystem=this
+                            };
+                            LoadConfiguration(body, n);
+                            bodies.Add(body);
+                    }
+                }
+                //PFUtil.Log("LoadSystem finished");
+                return(bodies);
+            }
+        }
+        public List<PFSystem> Systems = new List<PFSystem>();
+        public void FindSystems()
+        {
+            var sysFiles=Directory.GetFiles(DataPath, "*.system", SearchOption.AllDirectories);
+            foreach (var sysFile in sysFiles)
+            {
+                var sysName=Path.GetFileNameWithoutExtension(sysFile);
+                PFUtil.Log("LoadSystem:" + sysName);
+                //PFUtil.Log(sysFile);
+                var configRoot = ConfigNode.Load(sysFile);
+                var systemNode = configRoot.GetNode("System");
+                if (systemNode == null)
+                    continue;
+
+                PFSystem curSystem = null;
+                int i = 0;
+                while (true)
+                {
+                    var planetName = systemNode.GetValue("planetName", i);
+                    if (planetName == null)
+                        break;
+
+                    if (curSystem == null)
+                    {
+                        var sysPath =Path.GetDirectoryName(sysFile)+"/";
+                        //PFUtil.Log("New system:" + sysName + "->" + sysPath);
+                        curSystem = new PFSystem() {
+                            name = sysName,
+                            path = sysPath
+                        };
+                    }
+                    curSystem.planetNames.Add(planetName);
+                    PFUtil.Log(string.Format("Adding body {0} to system {1}", planetName, curSystem.name));
+                    i++;
+                }
+
+                if (curSystem != null)
+                {
+                    var disabledList = disabledSystems.Split(new char[] { ',' });
+                    if (disabledList.Any(x => x == curSystem.name))
+                    {
+                        PFUtil.Log("Disabling system " + curSystem.name);
+                        curSystem.enabled = false;
+                    }
+                    Systems.Add(curSystem);
+                }
+                //var lines=File.ReadAllLines(name);
+                //PFSystem curSystem = null;
+                //foreach (var line in lines)
+                //{
+                //    var l=line.Split(new string[]{"//"},StringSplitOptions.None);
+                //    var planetName = l[0].Trim();
+                //    if (planetName != string.Empty && File.Exists(DataPath+planetName+".cfg"))
+                //    {
+                //        if (curSystem == null)
+                //            curSystem = new PFSystem(){name=name};
+                //        curSystem.planetNames.Add(planetName);
+                //        print(string.Format("Adding body {0} to system {1}",planetName,curSystem.name));
+                //    }
+                //}
             }
         }
 
+        public void LoadSystems()
+        {
+            foreach (var sys in Systems)
+            {
+                var bodies = sys.LoadPlanets();
+                newBodies.AddRange(bodies);
+            }
+        }
+        //public void xLoadSystem()
+        //{
+        //    var systemConfigFilename=DataPath + "System.cfg";
+        //    print("LoadSystem:" + systemConfigFilename);
+        //    configRoot = ConfigNode.Load(systemConfigFilename);
+        //    int i = 0;
+        //    while (true)
+        //    {
+        //        var n = configRoot.GetNode("PFBody", i);
+        //        if (n == null)
+        //            break;
+
+        //        var body = new PFBody();
+        //        LoadConfiguration(body, n);
+        //        newBodies.Add(body);
+        //        i++;
+        //    }
+        //    print("LoadSystem finished");
+        //}
         public class PFOrbit
         {
             public double inclination;
@@ -266,7 +476,7 @@ namespace PlanetFactory
             }
             public bool Load(string name)
             {
-                var root = ConfigNode.Load(DataPath + name + ".cfg");
+                var root = ConfigNode.Load(CurrentPath + name + ".cfg");
                 if (root == null)
                     return false;
                 var orbitConfig = root.nodes.GetNode("Orbit");
@@ -285,16 +495,19 @@ namespace PlanetFactory
             public string templateName;
             public PFOrbit orbit;
             public int flightGlobalsIndex;
+            public bool hideScaled = false;
+            public PFSystem parentSystem=null;
+            public bool clearPQS = false;
 
             [XmlIgnore]
-            public localUpdateDelegate localUpdate;
+            public localUpdateDelegate localUpdate=null;
 
             public PFBody()
             {
                 
             }
             public PFBody(string name, string templateName, int flightGlobalsIndex, PFOrbit orbit,
-                localUpdateDelegate localUpdate)
+                localUpdateDelegate localUpdate=null)
             {
                 this.name = name;
                 this.templateName = templateName;
@@ -305,75 +518,122 @@ namespace PlanetFactory
 
             public void CreatePrefab()
             {
-                var templateBody = prefabBodies[templateName];
+                try
+                {
+                    if (parentSystem != null)
+                    {
+                        PlanetFactory.OverridePath = parentSystem.path;
+                    }
+                    var templateBody = prefabBodies[templateName];
 
-                var body = (PSystemBody) Instantiate(templateBody);
-                body.celestialBody.bodyName = name;
-                body.flightGlobalsIndex = flightGlobalsIndex;
+                    var body = (PSystemBody)Instantiate(templateBody);
+
+                    body.celestialBody.bodyName = name;
+                    body.flightGlobalsIndex = flightGlobalsIndex;
+
+                    if (orbit == null)
+                        orbit = new PFOrbit();
 
                     //load from config (if any)
-                orbit.Load(name);
+                    orbit.Load(name);
 
-                var parentBody = prefabBodies[orbit.referenceBody];
-                if (body.celestialBody.orbitDriver != null)
-                {
-                    body.celestialBody.orbitDriver.orbit = new Orbit(orbit.inclination, orbit.eccentricity,
-                        orbit.semiMajorAxis, orbit.LAN,
-                        orbit.argumentOfPeriapsis, orbit.meanAnomalyAtEpoch, orbit.epoch, parentBody.celestialBody);
+                    var parentBody = prefabBodies[orbit.referenceBody];
+                    if (body.celestialBody.orbitDriver != null)
+                    {
+                        body.celestialBody.orbitDriver.orbit = new Orbit(orbit.inclination, orbit.eccentricity,
+                            orbit.semiMajorAxis, orbit.LAN,
+                            orbit.argumentOfPeriapsis, orbit.meanAnomalyAtEpoch, orbit.epoch, parentBody.celestialBody);
 
-                    body.celestialBody.orbitDriver.UpdateOrbit();
+                        body.celestialBody.orbitDriver.UpdateOrbit();
+                    }
+
+
+                    LoadCB(body.celestialBody);
+
+
+                    body.children.Clear();
+                    parentBody.children.Add(body);
+                    body.enabled = false;
+
+                    prefabBodies[name] = body;
                 }
-
-
-                LoadCB(body.celestialBody);
-
-
-                body.children.Clear();
-                parentBody.children.Add(body);
-                body.enabled = false;
-
-                prefabBodies[name] = body;
+                finally
+                {
+                    PlanetFactory.OverridePath = string.Empty;
+                }
             }
 
             public void UpdateBody()
             {
-                print("UpdateLocal:" + name);
-                localUpdate(this);
-
-                print("UpdateScaled:" + name);
-                var smallPlanet = PFUtil.FindScaled(name);
-
-                if (templateName == "Sun")
+                PFUtil.Log("UpdateLocal:" + name);
+                try
                 {
-                    var sunBody = PFUtil.FindCB("Sun");
-                    var cb = PFUtil.FindCB(name); 
+                    if (parentSystem != null)
+                    {
+                        PlanetFactory.OverridePath = parentSystem.path;
+                    }
 
-                    var orbitDriver = smallPlanet.AddComponent<OrbitDriver>();
-                    orbitDriver.updateMode = OrbitDriver.UpdateMode.UPDATE;
-                    orbitDriver.name = cb.name;
-                    orbitDriver.orbit = new Orbit(orbit.inclination, orbit.eccentricity, orbit.semiMajorAxis, orbit.LAN,
-                        orbit.argumentOfPeriapsis, orbit.meanAnomalyAtEpoch, orbit.epoch, sunBody);
+                    if (clearPQS)
+                        ClearPQSMods(name);
 
-                    cb.orbitDriver = orbitDriver;
+                    if (localUpdate != null)
+                        localUpdate(this);
+                    else
+                        LoadPQS(name);
 
-                    orbitDriver.referenceBody = sunBody;
-                    orbitDriver.celestialBody = cb;
+                    PFUtil.Log("UpdateScaled:" + name);
+                    var smallPlanet = PFUtil.FindScaled(name);
 
-                    cb.sphereOfInfluence = cb.orbit.semiMajorAxis * Math.Pow(cb.Mass / cb.orbit.referenceBody.Mass, 0.4);
-                    cb.hillSphere = cb.orbit.semiMajorAxis * (1 - cb.orbit.eccentricity) * Math.Pow(cb.Mass / cb.orbit.referenceBody.Mass, 0.333333333333333);
-                    cb.orbitDriver.QueuedUpdate = true;
-                    cb.CBUpdate();
+                    if (templateName == "Sun")
+                    {
+                        var sunBody = PFUtil.FindCB(orbit.referenceBody);
+                        var cb = PFUtil.FindCB(name);
 
-                    orbitDriver.UpdateOrbit();
+                        var orbitDriver = smallPlanet.AddComponent<OrbitDriver>();
+                        orbitDriver.updateMode = OrbitDriver.UpdateMode.UPDATE;
+                        orbitDriver.name = cb.name;
+                        orbitDriver.orbit = new Orbit(orbit.inclination, orbit.eccentricity, orbit.semiMajorAxis, orbit.LAN,
+                            orbit.argumentOfPeriapsis, orbit.meanAnomalyAtEpoch, orbit.epoch, sunBody);
+
+                        cb.orbitDriver = orbitDriver;
+
+                        orbitDriver.referenceBody = sunBody;
+                        orbitDriver.celestialBody = cb;
+
+                        cb.sphereOfInfluence = cb.orbit.semiMajorAxis * Math.Pow(cb.Mass / cb.orbit.referenceBody.Mass, 0.4);
+                        cb.hillSphere = cb.orbit.semiMajorAxis * (1 - cb.orbit.eccentricity) * Math.Pow(cb.Mass / cb.orbit.referenceBody.Mass, 0.333333333333333);
+                        cb.orbitDriver.QueuedUpdate = true;
+                        cb.CBUpdate();
+
+                        orbitDriver.UpdateOrbit();
+                    }
+
+                    LoadScaledPlanet(smallPlanet, name);
+
+                    if (hideScaled)//doesnt work. 
+                    {
+                        var bigPlanet = PFUtil.FindLocal(name);
+                        var mr = bigPlanet.GetComponent<MeshFilter>();
+                        if (mr != null)
+                            mr.mesh = mr.sharedMesh = null;
+
+                        mr = smallPlanet.GetComponent<MeshFilter>();
+                        if (mr != null)
+                            mr.mesh = mr.sharedMesh = null;
+                        //mr.active = false;
+                    }
                 }
-
-                LoadScaledPlanet(smallPlanet, name);
+                finally
+                {
+                    PlanetFactory.OverridePath = string.Empty;
+                }
             }
 
             public static void LoadScaledPlanet(GameObject smallPlanet, string name,bool bLoadTemp=false)
             {
+                PFUtil.Log("LoadScaledPlanet:" + name);
 
-                var root = ConfigNode.Load(DataPath + name + ".cfg");
+                var root = ConfigNode.Load(CurrentPath + name + ".cfg");
                 if (root != null)
                 {
                     var sConfig = root.nodes.GetNode("ScaledTransform");
@@ -381,36 +641,50 @@ namespace PlanetFactory
                     if (sConfig != null)
                     {
                         var scaledBody = PFUtil.FindScaled(name);
-
-                        var ratio = float.Parse(sConfig.GetValue("ratio"));
-                        var newScale = (float)PFUtil.FindCB(name).Radius * ratio;
-                        scaledBody.transform.localScale = new Vector3(newScale, newScale, newScale);
+                        if (sConfig.HasValue("ratio"))
+                        {
+                            var ratio = float.Parse(sConfig.GetValue("ratio"));
+                            var newScale = (float)PFUtil.FindCB(name).Radius * ratio;
+                            scaledBody.transform.localScale = new Vector3(newScale, newScale, newScale);
+                        }
                     }
 
                 }
-
                 var binName = name + ".bin";
                 if (!bLoadTemp)
                 {
-                    var colorTexture = PFUtil.LoadTexture(DataPath + name + "_map.png");
-                    var bumpTexture = PFUtil.LoadTexture(DataPath + name + "_normal.png");
+                    var colorTexture = PFUtil.LoadTexture(CurrentPath + name + "_map.png");
+                    var bumpTexture = PFUtil.LoadTexture(CurrentPath + name + "_normal.png");
+
+                    if (bumpTexture == PFUtil.defaultTexture)
+                        bumpTexture = null; //Bug fix. Dont use Normal map if not found.
 
                     LoadScaledPlanetTextures(name, colorTexture, bumpTexture);
                 }
                 else
                 {
-                    var colorTexture = PFUtil.LoadTexture(DataPath + name + "_map_.png");
-                    var bumpTexture = PFUtil.LoadTexture(DataPath + name + "_normal_.png");
+                    var colorTexture = PFUtil.LoadTexture(CurrentPath + name + "_map_.png");
+                    var bumpTexture = PFUtil.LoadTexture(CurrentPath + name + "_normal_.png");
+
+                    if (bumpTexture == PFUtil.defaultTexture)
+                        bumpTexture = null; //Bug fix. Dont use Normal map if not found.
+
                     binName = name + "_.bin";
                     LoadScaledPlanetTextures(name, colorTexture, bumpTexture);
                 }
 
-                if (KSP.IO.File.Exists<PlanetFactory>(binName))
+                var binFileName = CurrentPath + binName;
+                if (File.Exists(binFileName))
+                //if (KSP.IO.File.Exists<PlanetFactory>(binName))
                 {
-                    //print("Loading mesh");
+                    PFUtil.Log("Loading mesh:" + binName);
                     var smallPlanetMeshFilter = (MeshFilter) smallPlanet.GetComponentInChildren((typeof (MeshFilter)));
                     var newVerts = new Vector3[smallPlanetMeshFilter.mesh.vertices.Count()];
-                    var reader = KSP.IO.BinaryReader.CreateForType<PlanetFactory>(binName);
+                    //var reader = KSP.IO.BinaryReader.CreateForType<PlanetFactory>(binName);
+
+                    var stream = File.OpenRead(binFileName);
+                    var reader = new BinaryReader(stream);
+
                     for (var i = 0; i < newVerts.Count(); i++)
                     {
                         newVerts[i].x = reader.ReadSingle();
@@ -504,35 +778,62 @@ namespace PlanetFactory
                             field.SetValue(obj, ParseOrbit(node.GetNode(key)));
                             break;
                         case "pqsmod_pfheightcolor+landclass[]":
-                            int i = 0;
-                            var lcs = new List<PQSMod_PFHeightColor.LandClass>();
-                            //print("parse landclass");
-                            var pn = node.GetNode(key);
-                            while (true)
                             {
-                                var n = pn.GetNode("LandClass", i);
-                                if (n != null)
+                                int i = 0;
+                                var lcs = new List<PQSMod_PFHeightColor.LandClass>();
+                                //print("parse landclass");
+                                var pn = node.GetNode(key);
+                                while (true)
                                 {
-                                    var nlc = new PQSMod_PFHeightColor.LandClass();
-                                    LoadConfiguration(nlc,n);
-                                    lcs.Add(nlc);
+                                    var n = pn.GetNode("LandClass", i);
+                                    if (n != null)
+                                    {
+                                        var nlc = new PQSMod_PFHeightColor.LandClass();
+                                        LoadConfiguration(nlc, n);
+                                        lcs.Add(nlc);
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                    i++;
                                 }
-                                else
-                                {
-                                    break;
-                                }
-                                i++;
-                            }
                             field.SetValue(obj, lcs.ToArray());
+                            }
                             break;
-                            
+                        case "pqsmod_vertexplanet+landclass[]":
+                            {
+                                int i = 0;
+                                var lcs = new List<PQSMod_VertexPlanet.LandClass>();
+           PFUtil.Log("pqsmod_vertexplanet+landclass[]");
+                                var pn = node.GetNode(key);
+                                while (true)
+                                {
+                                    var n = pn.GetNode("LandClass", i);
+                                    if (n != null)
+                                    {
+                                        var nlc = new PFVertexPlanetLandClass();
+                                        LoadConfiguration(nlc, n);
+                                        lcs.Add(nlc);
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                    i++;
+                                }
+                                field.SetValue(obj, lcs.ToArray());
+         PFUtil.Log("END pqsmod_vertexplanet+landclass[]");
+
+                            }
+                            break;                            
                         case "mapso":
                             //print("Loading map:"+config[key]);
                             if (config[key].ToLower() == "null")
                                 field.SetValue(obj, null);
                             else
                             {
-                                var colorTexture = PFUtil.LoadTexture(DataPath + config[key]);
+                                var colorTexture = PFUtil.LoadTexture(CurrentPath + config[key]);
                                 var mapso = (MapSO) ScriptableObject.CreateInstance(typeof (MapSO));
                                 mapso.CreateMap(MapSO.MapDepth.RGBA, colorTexture);
                                 field.SetValue(obj, mapso);
@@ -564,15 +865,16 @@ namespace PlanetFactory
             }
             return (dict);
         }
-        public static void LoadCB(CelestialBody body)
+        public static void LoadCB(CelestialBody body,ConfigNode root=null)
         {
-            var root = ConfigNode.Load(DataPath + body.bodyName + ".cfg");
+            if(root==null)
+                root = ConfigNode.Load(CurrentPath + body.bodyName + ".cfg");
             if (root != null)
             {
                 var cbConfig = root.nodes.GetNode("CelestialBody");
                 if (cbConfig != null)
                 {
-                    print("loading CB config:" + body.bodyName);
+                    PFUtil.Log("loading CB config:" + body.bodyName);
                     LoadConfiguration(body, cbConfig);
                     body.CBUpdate();
                 }
@@ -594,14 +896,32 @@ namespace PlanetFactory
                 body.orbitDriver.UpdateOrbit();
             }
         }
+        //PQSMod_MaterialSetDirection.target
+        private static string[] EssentialMods = { "PQSMod_MaterialSetDirection", "PQSMod_CelestialBodyTransform", "PQSMod_AltitudeAlpha", "PQSMod_UVPlanetRelativePosition", "PQSMod_QuadMeshColliders" };
+        //PQSMod_AerialPerspectiveMaterial?
+        public static void ClearPQSMods(string bodyName)
+        {
+            PFUtil.Log("ClearPQSMods:" + bodyName);
+            var localGameObject = PFUtil.FindLocal(bodyName);
+            var mods = localGameObject.GetComponentsInChildren<PQSMod>(true);
+            foreach (var mod in mods)
+            {
+                var modType = mod.GetType().ToString();
+                if (!EssentialMods.Any(x => modType.Contains(x)))
+                {
+                    mod.modEnabled = false;
+                    mod.gameObject.SetActive(false);
+                    Destroy(mod.gameObject);
+                    PFUtil.Log("Removed:" + modType);
+                }
+            }
+        }
 
         public static void LoadPQS(string bodyName)
         {
             var localGameObject = PFUtil.FindLocal(bodyName);// localSpace.transform.FindChild(body.name).gameObject;
 
-            print("load config");
-            print(typeof(PQSMod).AssemblyQualifiedName);
-            var root = ConfigNode.Load(DataPath +bodyName+ ".cfg");
+            var root = ConfigNode.Load(CurrentPath + bodyName + ".cfg");
 
             var pqs = localGameObject.GetComponentInChildren<PQS>();
 
@@ -614,7 +934,7 @@ namespace PlanetFactory
                     mod.modEnabled = false;
                     mod.gameObject.SetActive(false);
                     Destroy(mod.gameObject);
-                    print("Removed PQSCity:");
+                    //PFUtil.Log("Removed PQSCity:");
                 }
             }
 
@@ -632,7 +952,7 @@ namespace PlanetFactory
                     componentType = Type.GetType(componentTypeStr + ", PlanetFactory, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
                 if (componentType == null)
                 {
-                    print("Cant find PQSMod type:" + componentTypeStr);
+                    PFUtil.Log("Cant find PQSMod type:" + componentTypeStr,LogType.Warning);
                     continue;
                 }
                 var component = localGameObject.GetComponentInChildren(componentType);
@@ -658,7 +978,6 @@ namespace PlanetFactory
 
                 if (component != null)
                 {
-                    print("Loading Config PQS:");// + Dump.GetGobPath(component.gameObject));
                     LoadConfiguration(component, node);
 
                     try
@@ -677,6 +996,10 @@ namespace PlanetFactory
                 pqs.RebuildSphere();
         }
 
+        public PFBody FindPFBody(string name)
+        {
+            return newBodies.FirstOrDefault(x=>x.name==name);
+        }
 
         public List<PFBody> newBodies = new List<PFBody>
         {
@@ -694,7 +1017,6 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     LoadPQS(body.name);
                 }),
 
@@ -712,7 +1034,6 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     LoadPQS(body.name);
 
                     //PFEffects.AddEffect(PFUtil.FindScaled(body.name), "fx_exhaustFlame_blue", Vector3.zero, Quaternion.Euler(-90, 0, 0), new Vector3(5000000000, 5000000000, 5000000000));
@@ -731,11 +1052,11 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     LoadPQS(body.name);
 
                     if (!shiftyMode)
                         return;
+
 
                     var localGameObject = PFUtil.FindLocal(body.name);
                     var vp = localGameObject.GetComponentInChildren<PQSMod_VertexPlanet>();
@@ -778,7 +1099,6 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
 
                     var localGameObject = PFUtil.FindLocal(body.name);
 
@@ -822,7 +1142,6 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     LoadPQS(body.name);
                 }),
 
@@ -840,7 +1159,6 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     LoadPQS(body.name);
                 }),
             new PFBody("Pock", "Minmus", 156,
@@ -857,7 +1175,6 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     LoadPQS(body.name);
 
                     var localGameObject = PFUtil.FindLocal(body.name);
@@ -910,7 +1227,6 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     var localGameObject = PFUtil.FindLocal(body.name);
 
                     var vhm = localGameObject.GetComponentInChildren<PQSMod_VertexHeightMap>();
@@ -959,72 +1275,69 @@ namespace PlanetFactory
                 },
                 localUpdate: delegate(PFBody body)
                 {
-                    print("Updating Local " + body.name);
                     LoadPQS(body.name);
                 }),
 #if true
 
-            new PFBody("Serious", "Sun", 200,
-                new PFOrbit
-                {
-                    inclination = 30.0f,
-                    eccentricity = 0.2,
-                    semiMajorAxis = 450000000000,
-                    LAN = 0,
-                    argumentOfPeriapsis = 0,
-                    meanAnomalyAtEpoch = 0,
-                    epoch = 0,
-                    referenceBody = "Sun"
-                },
-                localUpdate: delegate(PFBody body)
-                {
-                    print("Updating Local " + body.name);
-                    var localGameObject = PFUtil.FindLocal(body.name);
-                    var cb = localGameObject.GetComponent<CelestialBody>();
+            //new PFBody("Serious", "Sun", 200,
+            //    new PFOrbit
+            //    {
+            //        inclination = 30.0f,
+            //        eccentricity = 0.2,
+            //        semiMajorAxis = 450000000000,
+            //        LAN = 0,
+            //        argumentOfPeriapsis = 0,
+            //        meanAnomalyAtEpoch = 0,
+            //        epoch = 0,
+            //        referenceBody = "Sun"
+            //    },
+            //    localUpdate: delegate(PFBody body)
+            //    {
+            //        var localGameObject = PFUtil.FindLocal(body.name);
+            //        var cb = localGameObject.GetComponent<CelestialBody>();
 
-                    //cb.GeeASL = 0.0962500333786;
-                    //cb.CBUpdate();
-                }),
+            //        //cb.GeeASL = 0.0962500333786;
+            //        //cb.CBUpdate();
+            //    }),
 
-            new PFBody("Joker", "Minmus", 210,
-                new PFOrbit
-                {
-                    inclination = 30.0f,
-                    eccentricity = 0,
-                    semiMajorAxis = 2610000000,
-                    LAN = 0,
-                    argumentOfPeriapsis = 0,
-                    meanAnomalyAtEpoch = 0,
-                    epoch = 0,
-                    referenceBody = "Serious"
-                },
-                localUpdate: delegate(PFBody body)
-                {
-                    print("Updating Local " + body.name);
-                    var localGameObject = PFUtil.FindLocal(body.name);
-                    var vp = localGameObject.GetComponentInChildren<PQSMod_VertexPlanet>();
-                    if (vp != null)
-                    {
-                        vp.seed = 666;
-                        vp.deformity = 10000;
+            //new PFBody("Joker", "Minmus", 210,
+            //    new PFOrbit
+            //    {
+            //        inclination = 30.0f,
+            //        eccentricity = 0,
+            //        semiMajorAxis = 2610000000,
+            //        LAN = 0,
+            //        argumentOfPeriapsis = 0,
+            //        meanAnomalyAtEpoch = 0,
+            //        epoch = 0,
+            //        referenceBody = "Serious"
+            //    },
+            //    localUpdate: delegate(PFBody body)
+            //    {
+            //        var localGameObject = PFUtil.FindLocal(body.name);
+            //        var vp = localGameObject.GetComponentInChildren<PQSMod_VertexPlanet>();
+            //        if (vp != null)
+            //        {
+            //            vp.seed = 666;
+            //            vp.deformity = 10000;
 
-                        vp.landClasses[0].baseColor = new Color(0.4f, 0.1f, 0.1f);
-                        vp.landClasses[1].baseColor = new Color(0.4f, 0.7f, 0.4f);
-                        vp.landClasses[2].baseColor = new Color(0.5f, 0.5f, 0.7f);
-                        vp.landClasses[3].baseColor = new Color(0.9f, 0.9f, 0.9f);
+            //            vp.landClasses[0].baseColor = new Color(0.4f, 0.1f, 0.1f);
+            //            vp.landClasses[1].baseColor = new Color(0.4f, 0.7f, 0.4f);
+            //            vp.landClasses[2].baseColor = new Color(0.5f, 0.5f, 0.7f);
+            //            vp.landClasses[3].baseColor = new Color(0.9f, 0.9f, 0.9f);
 
-                        vp.sphere.minDetailDistance = 8;
-                        vp.sphere.minLevel = 1;
-                        vp.sphere.maxLevel = 9;
+            //            vp.sphere.minDetailDistance = 8;
+            //            vp.sphere.minLevel = 1;
+            //            vp.sphere.maxLevel = 9;
 
-                        vp.RebuildSphere();
-                    }
+            //            vp.RebuildSphere();
+            //        }
 
-                    var orbitDriver = localGameObject.GetComponent<OrbitDriver>();
-                    if (orbitDriver != null)
-                        orbitDriver.orbitColor = Color.magenta;
+            //        var orbitDriver = localGameObject.GetComponent<OrbitDriver>();
+            //        if (orbitDriver != null)
+            //            orbitDriver.orbitColor = Color.magenta;
 
-                }),
+            //    }),
 
 #endif
 
@@ -1078,6 +1391,8 @@ namespace PlanetFactory
         {
             var scaledPlanet = ScaledSpace.Instance.transform.FindChild(planetName).gameObject;
             var smallPlanetMeshRenderer = (MeshRenderer) scaledPlanet.GetComponentInChildren((typeof (MeshRenderer)));
+            if (smallPlanetMeshRenderer == null)
+                return;
             if (colorTexture != null)
                 smallPlanetMeshRenderer.material.mainTexture = colorTexture;
             if (bumpTexture != null)
@@ -1113,6 +1428,7 @@ public class PlanetFactoryPartlessLoader : KSP.Testing.UnitTest
 public static class PlanetFactoryPluginWrapper
 {
     public static GameObject PlanetFactory;
+    public static GameObject DebugConsole;
 
     public static void Initialize()
     {
@@ -1122,6 +1438,13 @@ public static class PlanetFactoryPluginWrapper
                 "PlanetFactory",
                 new [] {typeof (PlanetFactory.PlanetFactory)});
             UnityEngine.Object.DontDestroyOnLoad(PlanetFactory);
+        }
+        if (GameObject.Find("DebugConsole") == null)
+        {
+            DebugConsole = new GameObject(
+                "DebugConsole",
+                new[] { typeof(PlanetFactory.DebugConsole) });
+            UnityEngine.Object.DontDestroyOnLoad(DebugConsole);
         }
     }
 }

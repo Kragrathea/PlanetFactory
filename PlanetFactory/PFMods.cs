@@ -72,6 +72,16 @@ public class PQSMod_PFHeightColor : PQSMod
     }
 }
 
+public class PFVertexPlanetLandClass : PQSMod_VertexPlanet.LandClass
+{
+    public PFVertexPlanetLandClass():
+        base("Default",0,1,Color.cyan,Color.yellow,0.2)
+    {
+        colorNoiseMap = new PQSMod_VertexPlanet.SimplexWrapper(1, 4, 0.6, 4);
+        colorNoiseMap.Setup(666);
+    }
+}
+
 public class PQSMod_PFOblate : PQSMod
 {
     public double offset;
