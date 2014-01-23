@@ -8,31 +8,31 @@ using UnityEngine;
 public class PQSMod_PFHeightColor : PQSMod
 {
     public float blend = 1;
-    public LandClass[] landClasses=null;
+    public LandClass[] landClasses = null;
     public bool lerp = true;
 
-    new public void OnSetup()
+    public override void OnSetup()
     {
         requirements = PQS.ModiferRequirements.MeshColorChannel;
         blend = 1f;
     }
 
-    new public void OnVertexBuild(PQS.VertexBuildData data)
+    public override void OnVertexBuild(PQS.VertexBuildData data)
     {
         var height = (data.vertHeight - sphere.radiusMin) / (sphere.radiusMax - sphere.radiusMin);
 
         height = Mathf.Clamp((float)height, 0, 1);
-        LandClass curLandClass=null;
+        LandClass curLandClass = null;
         LandClass nextLandClass = null;
-        for(var i=0;i<landClasses.Length;i++)
+        for (var i = 0; i < landClasses.Length; i++)
         {
             var lc = landClasses[i];
-            if(height >= lc.altStart && height<=lc.altEnd)
+            if (height >= lc.altStart && height <= lc.altEnd)
             {
                 curLandClass = lc;
-                if (lerp && i+1 < landClasses.Length)
-                    nextLandClass=landClasses[i + 1];
-           
+                if (lerp && i + 1 < landClasses.Length)
+                    nextLandClass = landClasses[i + 1];
+
                 break;
             }
 
@@ -41,13 +41,13 @@ public class PQSMod_PFHeightColor : PQSMod
         {
             data.vertColor = Color.red;
         }
-        else if (nextLandClass==null)
+        else if (nextLandClass == null)
         {
             data.vertColor = Color.Lerp(data.vertColor, curLandClass.color, blend);
         }
         else
         {
-            data.vertColor = Color.Lerp(data.vertColor, Color.Lerp(curLandClass.color, nextLandClass.color, 
+            data.vertColor = Color.Lerp(data.vertColor, Color.Lerp(curLandClass.color, nextLandClass.color,
                 (float)((height - curLandClass.altStart) / (curLandClass.altEnd - curLandClass.altStart))), blend);
         }
     }
@@ -72,6 +72,16 @@ public class PQSMod_PFHeightColor : PQSMod
     }
 }
 
+public class PFVertexPlanetLandClass : PQSMod_VertexPlanet.LandClass
+{
+    public PFVertexPlanetLandClass() :
+        base("Default", 0, 1, Color.cyan, Color.yellow, 0.2)
+    {
+        colorNoiseMap = new PQSMod_VertexPlanet.SimplexWrapper(1, 4, 0.6, 4);
+        colorNoiseMap.Setup(666);
+    }
+}
+
 public class PQSMod_PFOblate : PQSMod
 {
     public double offset;
@@ -80,29 +90,25 @@ public class PQSMod_PFOblate : PQSMod
     {
     }
 
-    public void OnSetup()
+    public override void OnSetup()
     {
         this.requirements = PQS.ModiferRequirements.MeshCustomNormals;
     }
-    public double GetVertexMaxHeight()
+    public override double GetVertexMaxHeight()
     {
         return offset;
     }
 
-    public double GetVertexMinHeight()
+    public override double GetVertexMinHeight()
     {
         return offset;
     }
 
-    public void OnVertexBuildHeight(PQS.VertexBuildData vbData)
+    public override void OnVertexBuildHeight(PQS.VertexBuildData vbData)
     {
         var hei = Math.Sin(3.14159265358979 * vbData.v);
         hei = Math.Pow(hei, power);
         vbData.vertHeight = vbData.vertHeight + hei * offset;
-    }
-
-    private void Reset()
-    {
     }
 }
 
@@ -113,71 +119,63 @@ public class PQSMod_PFOffset : PQSMod
     {
     }
 
-    public void OnSetup()
+    public override void OnSetup()
     {
         this.requirements = PQS.ModiferRequirements.MeshCustomNormals;
     }
-    public double GetVertexMaxHeight()
+    public override double GetVertexMaxHeight()
     {
         return offset;
     }
 
-    public double GetVertexMinHeight()
+    public override double GetVertexMinHeight()
     {
         return offset;
     }
 
-    public void OnVertexBuildHeight(PQS.VertexBuildData vbData)
+    public override void OnVertexBuildHeight(PQS.VertexBuildData vbData)
     {
-        vbData.vertHeight = vbData.vertHeight+offset;
-    }
-
-    private void Reset()
-    {
+        vbData.vertHeight = vbData.vertHeight + offset;
     }
 }
 
 public class PQSMod_PFDebug : PQSMod
 {
-    public double offset=0.0;
+    public double offset = 0.0;
     public double minAlt = double.MaxValue;
     public PQSMod_PFDebug()
     {
     }
 
-    public void OnSetup()
+    public override void OnSetup()
     {
         this.requirements = PQS.ModiferRequirements.MeshCustomNormals;
     }
-    public double GetVertexMaxHeight()
+    public override double GetVertexMaxHeight()
     {
         return offset;
     }
 
-    public double GetVertexMinHeight()
+    public override double GetVertexMinHeight()
     {
         return offset;
     }
 
-    new public void OnVertexBuild(PQS.VertexBuildData data)
+    public override void OnVertexBuild(PQS.VertexBuildData data)
     {
-        if (data.vertHeight < sphere.radius+5)
+        if (data.vertHeight < sphere.radius + 5)
         {
             data.vertColor = Color.red;
         }
     }
 
-    public void OnVertexBuildHeight(PQS.VertexBuildData vbData)
+    public override void OnVertexBuildHeight(PQS.VertexBuildData vbData)
     {
-        if(vbData.vertHeight<minAlt)
+        if (vbData.vertHeight < minAlt)
         {
-            minAlt=vbData.vertHeight;
+            minAlt = vbData.vertHeight;
             //print("new minAlt "+minAlt);
         }
-    }
-
-    private void Reset()
-    {
     }
 }
 

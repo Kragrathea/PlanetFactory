@@ -395,12 +395,19 @@ namespace PlanetFactory
                     var colorTexture = PFUtil.LoadTexture(DataPath + name + "_map.png");
                     var bumpTexture = PFUtil.LoadTexture(DataPath + name + "_normal.png");
 
+                    if (bumpTexture == PFUtil.defaultTexture)
+                        bumpTexture = null; //Bug fix. Dont use Normal map if not found.
+
                     LoadScaledPlanetTextures(name, colorTexture, bumpTexture);
                 }
                 else
                 {
                     var colorTexture = PFUtil.LoadTexture(DataPath + name + "_map_.png");
                     var bumpTexture = PFUtil.LoadTexture(DataPath + name + "_normal_.png");
+
+                    if (bumpTexture == PFUtil.defaultTexture)
+                        bumpTexture = null; //Bug fix. Dont use Normal map if not found.
+
                     binName = name + "_.bin";
                     LoadScaledPlanetTextures(name, colorTexture, bumpTexture);
                 }
