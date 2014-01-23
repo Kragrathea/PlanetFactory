@@ -11,13 +11,13 @@ public class PQSMod_PFHeightColor : PQSMod
     public LandClass[] landClasses=null;
     public bool lerp = true;
 
-    new public void OnSetup()
+    public override void OnSetup()
     {
         requirements = PQS.ModiferRequirements.MeshColorChannel;
         blend = 1f;
     }
 
-    new public void OnVertexBuild(PQS.VertexBuildData data)
+    public override void OnVertexBuild(PQS.VertexBuildData data)
     {
         var height = (data.vertHeight - sphere.radiusMin) / (sphere.radiusMax - sphere.radiusMin);
 
@@ -90,29 +90,25 @@ public class PQSMod_PFOblate : PQSMod
     {
     }
 
-    public void OnSetup()
+    public override void OnSetup()
     {
         this.requirements = PQS.ModiferRequirements.MeshCustomNormals;
     }
-    public double GetVertexMaxHeight()
+    public override double GetVertexMaxHeight()
     {
         return offset;
     }
 
-    public double GetVertexMinHeight()
+    public override double GetVertexMinHeight()
     {
         return offset;
     }
 
-    public void OnVertexBuildHeight(PQS.VertexBuildData vbData)
+    public override void OnVertexBuildHeight(PQS.VertexBuildData vbData)
     {
         var hei = Math.Sin(3.14159265358979 * vbData.v);
         hei = Math.Pow(hei, power);
         vbData.vertHeight = vbData.vertHeight + hei * offset;
-    }
-
-    private void Reset()
-    {
     }
 }
 
@@ -123,27 +119,23 @@ public class PQSMod_PFOffset : PQSMod
     {
     }
 
-    public void OnSetup()
+    public override void OnSetup()
     {
         this.requirements = PQS.ModiferRequirements.MeshCustomNormals;
     }
-    public double GetVertexMaxHeight()
+    public override double GetVertexMaxHeight()
     {
         return offset;
     }
 
-    public double GetVertexMinHeight()
+    public override double GetVertexMinHeight()
     {
         return offset;
     }
 
-    public void OnVertexBuildHeight(PQS.VertexBuildData vbData)
+    public override void OnVertexBuildHeight(PQS.VertexBuildData vbData)
     {
         vbData.vertHeight = vbData.vertHeight+offset;
-    }
-
-    private void Reset()
-    {
     }
 }
 
@@ -155,21 +147,21 @@ public class PQSMod_PFDebug : PQSMod
     {
     }
 
-    public void OnSetup()
+    public override void OnSetup()
     {
         this.requirements = PQS.ModiferRequirements.MeshCustomNormals;
     }
-    public double GetVertexMaxHeight()
+    public override double GetVertexMaxHeight()
     {
         return offset;
     }
 
-    public double GetVertexMinHeight()
+    public override double GetVertexMinHeight()
     {
         return offset;
     }
 
-    new public void OnVertexBuild(PQS.VertexBuildData data)
+    public override void OnVertexBuild(PQS.VertexBuildData data)
     {
         if (data.vertHeight < sphere.radius+5)
         {
@@ -177,17 +169,13 @@ public class PQSMod_PFDebug : PQSMod
         }
     }
 
-    public void OnVertexBuildHeight(PQS.VertexBuildData vbData)
+    public override void OnVertexBuildHeight(PQS.VertexBuildData vbData)
     {
         if(vbData.vertHeight<minAlt)
         {
             minAlt=vbData.vertHeight;
             //print("new minAlt "+minAlt);
         }
-    }
-
-    private void Reset()
-    {
     }
 }
 
