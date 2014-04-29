@@ -619,6 +619,63 @@ public static class Dump
         }
         return sb.ToString();
     }
+    
+    
+    //RelsahSystem code:
+    //Reslah fix ported for multiuse
+		public static void FixStar( string starName )
+		{
+			//Get defualt stuff
+			GameObject Scenery = GameObject.Find("Scenery");
+			Sun DefualtStar = Scenery.GetComponentInChildren<Sun>();
+			
+			//Create a new instance of "scenery star"
+			GameObject newSceneryStar = new GameObject( starName + "_scenery" );
+			newSceneryStar.transform.parent = Scenery.transform;
+			
+			//Create a new lense flare, and dump the existing suns data to it.
+			LensFlare NewLenseFlare = newSceneryStar.AddComponent<LensFlare>();
+			NewLenseFlare.color = GameObject.Find("SunLight").GetComponentInChildren<LensFlare>().color;
+			NewLenseFlare.flare = GameObject.Find("SunLight").GetComponentInChildren<LensFlare>().flare;
+			
+			//Add the "light"
+			Light newLight = newSceneryStar.AddComponent<Light>();
+			
+			//Create a new instance of "CustomStar"
+			CustomStar newStar = newSceneryStar.AddComponent<CustomStar>();
+			newStar.name = starName + "Sun";
+			newStar.target = DefualtStar.target;
+			newStar.brightnessCurve = DefualtStar.brightnessCurve;
+			newStar.AU = DefualtStar.AU;
+			newStar.sun = Utils.FindCB( starName );
+			newStar.sunFlare = NewLenseFlare;
+			newStar.localTime = DefualtStar.localTime;
+			newStar.fadeStart = DefualtStar.fadeStart;
+			newStar.fadeEnd = DefualtStar.fadeEnd;
+			
+			newLight.type = DefualtStar.light.type;
+			newLight.transform.position = Utils.FindCB( starName ).transform.position;
+			newLight.transform.parent = Utils.FindCB( starName ).transform.parent;
+			
+			newSceneryStar.transform.position = Utils.FindScaled( starName ).transform.position;
+			newSceneryStar.transform.parent = Utils.FindScaled( starName ).transform;
+			newSceneryStar.layer = Utils.FindScaled( starName ).layer;
+			
+			GameObject DetectorGOB;
+			
+			if( GameObject.FindObjectOfType( typeof( Detector ) ) == null ) //spawn a new detector
+			{
+				DetectorGOB = new GameObject( "Detector", typeof( Detector ) );
+				GameObject.DontDestroyOnLoad( DetectorGOB );
+			}
+			else
+			{
+				DetectorGOB = (GameObject)GameObject.FindObjectOfType( typeof( Detector ) );
+			}
+			
+			Detector StarFixer = (Detector)DetectorGOB.GetComponent( typeof(Detector) );
+			StarFixer.AddStar( starName, newStar );
+		}
 }
 
 
