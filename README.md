@@ -3,5 +3,5 @@ PlanetFactory
 
 Krags Planet Factory for Kerbal Space Program
 
-License:
-All rights reserved. You may fork, view and learn from this source in accordance with github terms of service. But you can not distribute derivative works without the express permission of Kragrethea. But just ask! I am very flexible. 
+PLEASE NOTE: The License has changed. As of Aug 1 2014 PlantFactory is now under standard GPL License. In short feel free to copy any part of the code and/or make your own versions. 
+
